@@ -2,14 +2,35 @@
 
 import os
 import re
-from cache import *
 from nltk.stem.wordnet import WordNetLemmatizer
 import requests
-from xml.dom.minidom import parse, parseString
+from xml.dom.minidom import parseString
+import pickle
 
 fileList = os.listdir('.')
 # fileList = [xx for xx in fileList if re.search('.*txt$', xx)]
 fileList = ['data.txt']
+
+
+def get_file(cmpstr):
+    for xx in os.listdir('.'):
+        if xx.lower() == cmpstr.lower():
+            return cmpstr
+        else:
+            return None
+
+
+def get_cached():
+    if get_file("dict.pkl"):
+        with open("dict.pkl", 'rb') as dump_fid:
+            return pickle.load(dump_fid)
+    else:
+        return dict()
+
+
+def set_cached(dump_file):
+    with open('dict.pkl', 'wb') as dump_fid:
+        pickle.dump(dump_file, dump_fid)
 
 
 def get_node_text(nodes):
@@ -39,7 +60,7 @@ for file in fileList:
         print("The length of word list is %d" % len(wordList))
     # get the interpretation of for each word
     notFound = 0
-    wordDict = dict()
+    wordDict = get_cached()
 
     with open('count.txt', 'r') as fid1:
         rank = fid1.read()
@@ -80,6 +101,7 @@ for file in fileList:
 
                 word_rank = get_rank_id(word, rank)
                 wordDict[word] = (line, word_rank)
+                set_cached(wordDict)
 
     # print some useful info
     print('Total %d words are not found' % notFound)
