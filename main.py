@@ -36,12 +36,12 @@ def set_cached(dump_file):
 def get_node_text(nodes):
     for node in nodes:
         if node.nodeType == node.TEXT_NODE:
-            return(node.data)
+            return (node.data)
     return ''
 
 
 def get_rank_id(word, content):
-    word_rank = -1
+    word_rank = 0
     for line in content.splitlines():
         if line.startswith(word.upper()):
             return round(word_rank / 10000)
@@ -49,6 +49,8 @@ def get_rank_id(word, content):
             word_rank += 1
     return word_rank
 
+
+verbose = 0
 
 for file in fileList:
     with open(file, encoding='utf8') as fid:
@@ -67,7 +69,14 @@ for file in fileList:
 
     with open(r'dict.txt', 'r', encoding='gbk') as fid:
         content = fid.read()
+        iterate_idx = 1
         for word in wordList:
+
+            if verbose == 1:
+                print("current word is %s" % word)
+            if iterate_idx % 100 == 0:
+                print(" %d words has been processed" % iterate_idx)
+
             if word in wordDict.keys():
                 continue
             else:
@@ -92,6 +101,8 @@ for file in fileList:
                     url = r'http://dict-co.iciba.com/api/dictionary.php?w={0}&key=EA52AF8E6088B1E32B16603A488E3F9D&type=xml'.format(
                         word)
                     response = requests.get(url)
+                    response.close()
+                    response.encoding = "utf-8"
                     xmldom = parseString(response.text)
                     pos = xmldom.getElementsByTagName('pos')
                     acceptation = xmldom.getElementsByTagName('acceptation')
@@ -101,8 +112,22 @@ for file in fileList:
 
                 word_rank = get_rank_id(word, rank)
                 wordDict[word] = (line, word_rank)
+                if verbose == 1:
+                    print(' The interpretation is %s, and rank %i' % (line, word_rank))
+
                 set_cached(wordDict)
 
     # print some useful info
     print('Total %d words are not found' % notFound)
     print('The ratio is %i' % (notFound / len(wordList)))
+
+user_rank = int(input("please input a rank"))
+
+with open('list.txt', 'w+', encoding='utf8') as fidout:
+    for word in wordDict.keys():
+        wordDict = sorted(wordDict,key)
+        if wordDict[word][1] >= user_rank:
+            fidout.write('%s, %s \n %s \n\n' % (word, str(wordDict[word][1]), wordDict[word][0]))
+        else:
+            if verbose == 1:
+                print('%s is ignored' % word)
